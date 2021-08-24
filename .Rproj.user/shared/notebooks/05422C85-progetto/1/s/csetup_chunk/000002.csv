@@ -1,6 +1,7 @@
 "0","library(knitr)"
+"2","package ‘knitr’ was built under R version 4.0.5"
 "0","library(rmdformats)"
-"0",""
+"2","package ‘rmdformats’ was built under R version 4.0.5"
 "0","## Global options"
 "0","options(max.print=""75"")"
 "0","opts_chunk$set(echo=FALSE,"

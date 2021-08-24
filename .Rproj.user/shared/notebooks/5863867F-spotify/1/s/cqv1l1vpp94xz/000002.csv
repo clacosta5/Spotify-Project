@@ -1,5 +1,0 @@
-"0","# GET SPECIFIC PLAYLIST FEATURES"
-"0","#https://open.spotify.com/playlist/19Ym5wkRW8Yjk7KFOUMCZV?si=66c5ef6badba46c5"
-"0","playlist_username <- 'nostalgic'"
-"0","playlist_uris <- c('19Ym5wkRW8Yjk7KFOUMCZV')"
-"0","playlistNostalgic <- get_playlist_audio_features(playlist_username, playlist_uris)"
