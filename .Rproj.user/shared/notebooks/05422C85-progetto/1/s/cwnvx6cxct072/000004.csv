@@ -1,0 +1,7 @@
+"0",""
+"0","playlistJuly %>% "
+"0","  group_by(track.album.name) %>% "
+"0","  summarise(mean(valence)) %>% "
+"0","  arrange(desc(`mean(valence)`)) %>% "
+"0","  kable() %>% "
+"0","  kable_styling(full_width = F, position = ""left"")"

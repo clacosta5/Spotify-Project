@@ -1,0 +1,7 @@
+{
+    "installOptions": {
+        "installFromRepository": true,
+        "libraryPath": "C:/Users/Claco/OneDrive - Università degli Studi di Udine/Documenti/R/win-library/4.0",
+        "installDependencies": true
+    }
+}

@@ -1,0 +1,8 @@
+"0","# GET FEATURES TOP FOUR FAVORITE ARTISTS"
+"0","favArtist1 <- get_artist_audio_features(artist= ""Taylor Swift"")"
+"2","Request failed [400]. Retrying in 1.7 seconds...
+"
+"2","Request failed [400]. Retrying in 2.1 seconds...
+"
+"2","Error in get_spotify_access_token() : 
+"

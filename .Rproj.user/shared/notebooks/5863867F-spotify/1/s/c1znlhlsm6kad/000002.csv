@@ -1,0 +1,8 @@
+"0","# PLOT LESS POPULARITY TRACKS ON SPECIFIC PLAYLIST"
+"0","playlistJuly %>%"
+"0","  group_by(track.album.name) %>% "
+"0","  ggplot(aes(x = track.album.name, y = valence)) + "
+"0","  geom_col(aes(fill = track.album.name)) +"
+"0","  labs(x= ""Track name"", y= ""Valence"") + "
+"0","  ggtitle(""What are the least popular songs I listen to on Spotify?"", ""Popularity ranking < 50 in a specific playlist"") +"
+"0","  theme(axis.text.x = element_text(angle = 90))"

@@ -1,0 +1,26 @@
+library(shiny)
+
+# Define UI for the application 
+# Fluid pages scale their components in realtime to fill all available browser width.
+ui = fluidPage(
+   
+   # Application title
+   titlePanel("Hello Shiny"),
+   
+   # Create a layout with a sidebar and main area. The sidebar is displayed with a distinct background color and 
+   # typically contains input controls. The main area occupies 2/3 of the horizontal width and typically contains outputs.
+   sidebarLayout(
+     # sidebar panel 
+     sidebarPanel("Sidebar panel"),
+      
+      # main panel
+      mainPanel("Main panel")
+   )
+)
+
+# Define server logic 
+server = function(input, output) {}
+
+# Run the application 
+shinyApp(ui = ui, server = server)
+

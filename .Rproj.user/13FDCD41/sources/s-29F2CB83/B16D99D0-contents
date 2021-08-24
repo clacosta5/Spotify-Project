@@ -1,0 +1,800 @@
+---
+title: "spotify"
+author: "cla"
+date: "10/4/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# carico librerie e get spotify authorization
+```{r}
+library(dplyr)
+library(spotifyr)
+library(plotly)
+library(ggplot2)
+library(lubridate)
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(formattable)
+library(genius)
+
+# ESTABLISH CONNECTION SPOTIFY API
+id = "00f22c2d4c35499bb29854c73ffdff97"
+id_secret = "46d59a3db5514cdd93c1de05365e57c8"
+#idVale = "bebf67dce2c54886b1171591e84eeb4b"
+#id_secretVale = "f7bdc08240ca4cacbe576181d472c2f8"
+Sys.setenv(SPOTIFY_CLIENT_ID = id)
+Sys.setenv(SPOTIFY_CLIENT_SECRET = id_secret)
+get_spotify_authorization_code()
+
+access_token <- get_spotify_access_token()
+
+
+# id <- "00f22c2d4c35499bb29854c73ffdff97"
+# secret <- "46d59a3db5514cdd93c1de05365e57c8"
+# Sys.setenv(SPOTIFY_CLIENT_ID = id)
+# Sys.setenv(SPOTIFY_CLIENT_SECRET = secret)
+# access_token <- get_spotify_access_token()
+# 
+# my_id <- "rzte1vuae5ai4aqny878jsy8b"
+# my_plists <- get_user_playlists(my_id)
+# 
+# my_plists2 <- my_plists %>%
+#   filter(name %in% c('rob', 'ts', 'my salvation'))
+# 
+# tracks <- get_playlist_tracks(my_plists2)
+# features <- get_track_audio_features(tracks)
+
+
+
+
+# trova le MIE ultime 5 canzoni ascoltate!
+get_my_recently_played(limit = 5) %>% 
+    mutate(artist.name = map_chr(track.artists, function(x) x$name[1]),
+           played_at = as_datetime(played_at)) %>% 
+    select(track.name, artist.name, track.album.name, played_at) %>% 
+    kable() #funzione di knitr per creare tabelle
+
+```
+
+
+```{r}
+
+ts <- get_artist_audio_features('Taylor Swift')
+
+
+ts %>% 
+    count(key_mode, sort = TRUE) %>% 
+    head(5) %>% 
+    kable()
+```
+
+# artisti più ascoltati short e long term
+```{r}
+# trova i MIEI artisti più ascoltati
+genereShort = get_my_top_artists_or_tracks(type = 'artists', time_range = 'short_term') %>%
+    select(name, genres, popularity, followers.total) %>% 
+    rowwise %>% 
+    mutate(genres = paste(genres, collapse = ', ')) %>% 
+    ungroup
+
+genereLong50 = get_my_top_artists_or_tracks(type = 'artists', time_range = 'long_term', limit = 50) %>%
+    select(name, genres, popularity, followers.total) %>% 
+    rowwise %>% 
+    mutate(genres = paste(genres, collapse = ', ')) %>% 
+    ungroup
+#tolgo cose inutili
+#write.csv(genereLong50,"genereLong50_2.csv", row.names = FALSE)
+#riprendo dataframe
+genereLong50Mod <- read.csv("genereLongg.csv")
+
+top50 <- genereLong50Mod %>%
+  ggplot(aes(x = popularity, y = followers.total, colour = name, genres = genres)) +
+  geom_point()
+ggplotly(top50, tooltip = c("x", "y", "colour", "genres"))
+
+#mi copio la tabella perhcè viene modificata!
+write.csv(genereShort,"genereShort.csv", row.names = FALSE)
+
+genereLong = get_my_top_artists_or_tracks(type = 'artists', time_range = 'long_term') %>%
+    select(name, genres, popularity, followers.total) %>% 
+    rowwise %>% 
+    mutate(genres = paste(genres, collapse = ', ')) %>% 
+    ungroup
+# GRAFICO GENERI TOP ARTISTI!!!
+#modifico la tabella per avere tutti i generi come colonna
+genereShort$pop = 0              #5
+genereShort$postTeen.pop = 0     #6
+genereShort$art.pop = 0          #7
+genereShort$dance.pop = 0        #8
+genereShort$electropop = 0       #9
+genereShort$indie.pop = 0        #10
+genereShort$uk.pop = 0           #11
+genereShort$modern.rock = 0      #12
+genereShort$pop.rock = 0         #13
+genereShort$pop.rap = 0          #14
+genereShort$RandB = 0            #15
+genereShort$punk = 0             #16
+
+# assegno ad ogni artista il genere esatto
+#Tay
+genereShort[1,5] = 1
+genereShort[1,6] = 1
+#Lorde
+genereShort[2,7] = 1
+genereShort[2,8] = 1
+genereShort[2,9] = 1
+genereShort[2,5] = 1
+genereShort[2,6] = 1
+#Sasha Sloan
+genereShort[3,9] = 1
+genereShort[3,10] = 1
+genereShort[3,5] = 1
+genereShort[3,6] = 1
+#OLIVIA
+genereShort[4,5] = 1
+#TOVE LO
+genereShort[5,8] = 1
+genereShort[5,9] = 1
+genereShort[5,5] = 1
+genereShort[5,6] = 1
+genereShort[5,14] = 1
+#LANA
+genereShort[6,7] = 1
+genereShort[6,5] = 1
+#ANNE MARIE
+genereShort[7,8] = 1
+genereShort[7,5] = 1
+genereShort[7,6] = 1
+genereShort[7,11] = 1
+#CHASE ATLANTIC
+genereShort[8,12] = 1
+genereShort[8,5] = 1
+#HAIM AVRIL
+genereShort[9,5] = 1
+genereShort[9,6] = 1
+genereShort[9,8] = 1
+#HAIM
+genereShort[10,7] = 1
+genereShort[10,8] = 1
+genereShort[10,10] = 1
+genereShort[10,13] = 1
+#BILLIE
+genereShort[11,9] = 1
+genereShort[11,5] = 1
+#Demi Lovato
+genereShort[12,5] = 1
+genereShort[12,6] = 1
+genereShort[12,8] = 1
+#Dua Lipa
+genereShort[13,8] = 1
+genereShort[13,5] = 1
+genereShort[13,11] = 1
+#Sleeping At Last
+genereShort[14,5] = 1
+genereShort[14,10] = 1
+genereShort[14,13] = 1
+#FLETCHER
+genereShort[15,8] = 1
+genereShort[15,9] = 1
+genereShort[15,5] = 1
+genereShort[15,6] = 1
+genereShort[15,10] = 1
+#THE WEEKND
+genereShort[16,5] = 1
+genereShort[16,15] = 1
+#Halsey
+genereShort[17,8] = 1
+genereShort[17,9] = 1
+genereShort[17,5] = 1
+genereShort[17,6] = 1
+genereShort[17,10] = 1
+#Rita Ora
+genereShort[18,8] = 1
+genereShort[18,9] = 1
+genereShort[18,14] = 1
+genereShort[18,6] = 1
+genereShort[18,11] = 1
+#BLINK 182
+genereShort[19,16] = 1
+#KHALID
+genereShort[20,5] = 1
+#totale, aggiungo una nuova riga alla fine con il totale per i vari generi
+#genereShort <- genereShort %>%
+#  add_row(name = "Totale", genres = "/", popularity = 0, followers.total = 0, pop = 17, postTeen.pop = 11, art.pop = 3, #dance.pop = 11, electropop = 7, indie.pop = 5, uk.pop = 4, modern.rock = 1, pop.rock = 2, pop.rap = 2, RandB = 1, punk #= 1)
+
+#per prova, non penso di metterlo?
+followers <- genereShort %>%
+  ggplot(aes(x = name, y = followers.total)) + 
+  geom_col(aes(fill = name)) +
+  labs(x= "Artist", y= "Followers") +
+  theme(axis.text.x = element_text(angle = 90))
+ggplotly(followers)
+
+
+nome <- c("pop", "post-teen pop", "art pop", "dance pop", "electropop", "indie pop", "uk pop", "modern rock", "pop rock", "pop rap", "r&b", "punk")
+tot <- c(17, 10, 3, 10, 7, 5, 3, 1, 2, 2, 1, 1)
+
+gen <- data.frame(nome, tot)
+
+grafGen <- gen %>%
+  ggplot(aes(x = nome, y = tot)) +
+  ggtitle("Generi più riprodotti ultimamente") +
+  #theme_dark() +
+  geom_col(aes(fill = nome)) +
+  labs(x = "genere", y = "totale per genere") +
+  theme(axis.text.x = element_text(angle = 90), plot.title = element_text(face = "italic"))
+#plot.background = element_rect(fill = "green")
+ggplotly(grafGen)
+
+#netta maggioranza per il pop ma è presente anche rock e punk!
+
+```
+
+# canzoni, ultime 20 riprodotte, più ascoltate
+```{r}
+get_my_top_artists_or_tracks(type = 'artists', time_range = 'long_term', limit = 10) %>% 
+    select(name, genres) %>% 
+    rowwise %>% 
+    mutate(genres = paste(genres, collapse = ', ')) %>% 
+    ungroup %>% 
+    kable()
+
+# trova le MIE canzoni più ascoltate ultimamente
+get_my_top_artists_or_tracks(type = 'tracks', time_range = 'short_term', limit = 5) %>% 
+    mutate(artist.name = map_chr(artists, function(x) x$name[1])) %>% 
+    select(name, artist.name, album.name, album.release_date) %>% 
+    kable()
+
+#My Last 20 Recently Played Songs
+rec = get_my_recently_played(limit = 20) %>% 
+        select(track.name, track.popularity, track.album.name)
+rec %>%
+    kbl(caption = "My Last 20 Recently Played Songs") %>%
+    kable_material("hover", html_font = "Lucida Bright")
+
+b = get_my_top_artists_or_tracks(type = 'tracks', time_range = 'long_term', limit = 10)
+
+# trova le MIE canzoni più ascoltate dall'inizio
+a = get_my_top_artists_or_tracks(type = 'tracks', time_range = 'long_term', limit = 10) %>% 
+        mutate(artist.name = map_chr(artists, function(x) x$name[1])) %>% 
+        select(name, popularity, artist.name, album.name, album.release_date) 
+        #kable()
+#kable(a, format = "simple", caption = "Top 10 Songs")
+formattable(a, list(`popularity` = color_bar("lightgreen")))
+
+a %>%
+    kbl(caption = "Top 10 Songs") %>%
+    kable_paper("hover", html_font = "Lucida Bright")
+
+
+# a %>%
+#     mutate(popularity = color_bar("lightgreen")(popularity)) %>%
+#     select(name, popularity, artist.name, album.name, album.release_date) %>%
+#     kbl(caption = "Top 10 Songs") %>%
+#     kable_paper("hover", html_font = "Lucida Bright")
+
+```
+# POPULARITY SCORE FOR SPOTIFY API
+The score is received from the Spotify API. The value will be between 0 and 100, with 100 being the most popular.
+
+The popularity is calculated by algorithm and is based, in the most part, on the total number of plays the track has had and how recent those plays are.
+
+Generally speaking, songs that are being played a lot now will have a higher popularity than songs that were played a lot in the past. Duplicate tracks (e.g. the same track from a single and an album) are rated independently. Artist and album popularity is derived mathematically from track popularity. Note that the popularity value may lag actual popularity by a few days: the value is not updated in real time.
+
+
+```{r}
+#https://open.spotify.com/artist/06HL4z0CvFAxyc27GXpf02?si=hAZ39vQvQTeGHbnyJjYkLw Tay
+#https://open.spotify.com/artist/00FQb4jTyendYWaN8pK0wa?si=3alnK503TZOJ22OE2SRzeQ Lana
+
+tay = get_artist_top_tracks("06HL4z0CvFAxyc27GXpf02", market = "US") %>%
+        select(name, popularity, album.name)
+
+tay %>%
+    kbl(caption = "Top 10 Taylor Swift's Songs") %>%
+    kable_paper("hover", html_font = "Lucida Bright")
+
+ldr = get_artist_top_tracks("00FQb4jTyendYWaN8pK0wa", market = "US") %>%
+        select(name, popularity, album.name)
+
+ldr %>%
+    kbl(caption = "Top 10 Lana Del Rey's Songs") %>%
+    kable_paper("hover", html_font = "Lucida Bright")
+
+
+
+```
+
+
+
+# PRENDO LE CANZONI DELLA MIA PLAYLIST DI APRILE (prova grafici?)
+```{r}
+#https://open.spotify.com/playlist/4H2KQCACabkNTOgcCRkV8U?si=d7e81ed65d5849ab
+april = get_playlist_tracks("4H2KQCACabkNTOgcCRkV8U") %>%
+    mutate(artist.name = map_chr(track.artists, function(x) x$name[1])) %>%
+    rename(id = track.id) %>%
+    select(track.name, id, track.popularity, artist.name)
+#april
+april2 = na.omit(april)
+# prendo tutti i track id, per trovare esempio danceabilty
+track_id = april2[["id"]]
+track_id
+#track_id = track_id[!is.na(track_id)]  # per togliere il valore NA del mio file locale!, in totale sono 40 brani
+#track_id
+dati = get_track_audio_features(c("0qAIiGFKLdV1xpNlEhjpq8", "2bzUVEvpZ7At5cYz1kOLI9", "0XqQxKtAdYbOC8OVIjWLZD", "5BK0uqwY9DNfZ630STAEaq",
+ "6nK2pIKFcRc5frrZKHgsiT", "6DrLROM5MG9bxWHeEG5elq", "3fGnrtrtL1IHSX9t4DKOYf", "1R0a2iXumgCiFb7HEZ7gUE",
+ "6oVxXO5oQ4pTpO8RSnkzvv", "71PmZqBXH0RUETqxpwlV0w", "3fVnlF4pGqWI9flVENcT28", "0b16LTzby1YRVd2nq2Z0fw",
+"5VQLMrWhailAhErKNUSnv1", "1qrpoAMXodY6895hGKoUpA", "01QdEx6kFr78ZejhQtWR5m", "2CYVETnhM9aytqrazYYwrK",
+"5RJot1fR8C90lLXzHtUqpo", "1dBBmAddRRIw6GwF7dPz6z", "0Z3JiHn6mhcObPmKhV9WRW", "3WIifw9lqdgSZpt9renBAg",
+"1hn1kCOG5dm1XgZYKpfaLR", "6TZitk9QD7531Jl1TT7TeH", "5pcjystBtalYeqaiXCcgEY", "3w6f34fBUXOvuko0Ihq7he",
+"0BI0hfbmqybnd3TezrDME3", "35iY0wPXAoLnI6ahHk0hUV", "4Zm2hTV7EqbqsFrraKBkyh", "61KpQadow081I2AsbeLcsb",
+"7pD8e7UxjqflEpMKfbEqKg", "3GCdLUSnKSMJhs4Tj6CV3s", "2nqio0SfWg6gh2eCtfuMa5", "3CeCwYWvdfXbZLXFhBrbnf",
+"6oGra1ykm9jtu4Qs2zrqTr", "6NFyWDv5CjfwuzoCkw47Xf", "6GNRkaWUB0Lwc19SdkTgx8", "3IhtE4fkytdrtEfV34UzkD",
+"6RvRzl1YJTDnUvdOtV21IK", "2k43eySbfpDVx0PrO99UI8", "7lPN2DXiMsVn7XUKtOW1CS", "4Hl9rOqYomojCmxYfr25im"))
+
+totale = merge(april2, dati, by = "id")
+aa = totale %>%
+    select(track.name, track.popularity, artist.name, danceability, energy, loudness, speechiness, instrumentalness, liveness, valence) %>%
+    arrange(track.name) %>%
+    ggplot(aes(track.popularity, valence, colour = artist.name)) +
+    geom_point(aes(text = track.name)) +
+    coord_cartesian(xlim = c(0, 100))
+
+ggplotly(aa)
+```
+
+
+```{r}
+#https://open.spotify.com/playlist/4kpuDs9fipoNRvuJy6hLPx?si=160201794df7419c
+#https://open.spotify.com/playlist/19Ym5wkRW8Yjk7KFOUMCZV?si=23c50be4be5a4e3b
+# GET SPECIFIC PLAYLIST FEATURES
+playlist_username <- "nostalgic"
+playlist_uris <- c('19Ym5wkRW8Yjk7KFOUMCZV')
+playlistFavsEnglish <- get_playlist_audio_features(playlist_username, playlist_uris)
+
+# PLOT LESS POPULARITY TRACKS ON SPECIFIC PLAYLIST
+
+playlistFavsEnglish %>% 
+  group_by(track.popularity) %>% 
+  filter(track.popularity >= "80") %>%
+  ggplot(aes(x = track.name, y = track.popularity)) + 
+  geom_col(aes(fill = track.album.name)) +
+  labs(x= "Track name", y= "Popularity") + 
+  ggtitle("What are the least popular songs I listen to on Spotify?", "Popularity ranking < 35 in a specific playlist") +
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+# playlist july
+```{r}
+# GET SPECIFIC PLAYLIST FEATURES
+playlist_username <- 'VII/MMXXI july'
+playlist_uris <- c('5jWdr5QCwbEi7mxO7cTAGh')
+playlistJuly <- get_playlist_audio_features(playlist_username, playlist_uris)
+```
+
+```{r}
+# PLOT LESS POPULARITY TRACKS ON SPECIFIC PLAYLIST
+playlistJuly %>%
+  group_by(track.album.name) %>% 
+  ggplot(aes(x = track.album.name, y = valence)) + 
+  geom_col(aes(fill = track.album.name)) +
+  labs(x= "Track name", y= "Valence") + 
+  ggtitle("What are the least popular songs I listen to on Spotify?", "Popularity ranking < 50 in a specific playlist") +
+  theme(axis.text.x = element_text(angle = 90))
+
+playlistJuly %>% 
+  group_by(track.album.name) %>% 
+  summarise(mean(valence)) %>% 
+  arrange(desc(`mean(valence)`)) %>% 
+  kable() %>% 
+  kable_styling(full_width = F, position = "left")
+
+```
+
+# tolgo dati inutili dal df e aggiungo nome artista
+```{r}
+playlistJuly_2 = playlistJuly %>%
+  select(track.name, track.artists, track.album.name, danceability, energy, key, loudness, speechiness, acousticness, instrumentalness, liveness, valence, tempo, track.popularity, track.album.name, track.album.release_date) %>%
+  mutate(track.artists = map_chr(track.artists, function(x) x$name[1]))
+```
+
+
+```{r}
+p = ggplot(data = playlistJuly_2, aes(x = valence, y = energy, color = track.artists)) +
+  geom_jitter(aes(text = track.name)) +
+  geom_vline(xintercept = 0.5) +
+  geom_hline(yintercept = 0.5) +
+  scale_x_continuous(expand = c(0, 0), limits = c(0, 1)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 1)) +
+  annotate('text', 0.25 / 2, 0.95, label = "Turbulent/Angry", fontface =
+             "bold") +
+  annotate('text', 1.75 / 2, 0.95, label = "Happy/Joyful", fontface = "bold") +
+  annotate('text', 1.75 / 2, 0.05, label = "Chill/Peaceful", fontface =
+             "bold") +
+  annotate('text', 0.25 / 2, 0.05, label = "Sad/Depressing", fontface =
+             "bold")
+
+ggplotly(p)
+```
+
+# playlist nostalgic
+
+```{r}
+# GET SPECIFIC PLAYLIST FEATURES
+#https://open.spotify.com/playlist/19Ym5wkRW8Yjk7KFOUMCZV?si=66c5ef6badba46c5
+playlist_username <- 'nostalgic'
+playlist_uris <- c('19Ym5wkRW8Yjk7KFOUMCZV')
+playlistNostalgic <- get_playlist_audio_features(playlist_username, playlist_uris)
+```
+
+tolgo dati inutili dal df e aggiungo nome artista
+```{r}
+playlistNostalgic_2 = playlistNostalgic %>%
+  select(track.name, track.artists, track.album.name, danceability, energy, key, loudness, speechiness, acousticness, instrumentalness, liveness, valence, tempo, track.popularity, track.album.name, track.album.release_date) %>%
+  mutate(track.artists = map_chr(track.artists, function(x) x$name[1]))
+```
+
+
+```{r}
+p = ggplot(data = playlistNostalgic_2, aes(x = valence, y = energy, color = track.artists)) +
+  geom_jitter(aes(text = track.name)) +
+  geom_vline(xintercept = 0.5) +
+  geom_hline(yintercept = 0.5) +
+  scale_x_continuous(expand = c(0, 0), limits = c(0, 1)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 1)) +
+  annotate('text', 0.25 / 2, 0.95, label = "Turbulent/Angry", fontface =
+             "bold") +
+  annotate('text', 1.75 / 2, 0.95, label = "Happy/Joyful", fontface = "bold") +
+  annotate('text', 1.75 / 2, 0.05, label = "Chill/Peaceful", fontface =
+             "bold") +
+  annotate('text', 0.25 / 2, 0.05, label = "Sad/Depressing", fontface =
+             "bold")
+
+ggplotly(p)
+```
+
+
+
+
+
+# playlist di vale
+```{r}
+# GET SPECIFIC PLAYLIST FEATURES
+#https://open.spotify.com/playlist/0xBMPORrcYsVisrIAhIuk8?si=708bf14411594756 claclaclaaa
+#https://open.spotify.com/playlist/3weiyhjJFvEAlgLQpOrfJr?si=b4d1354eba0240df fuck
+#https://open.spotify.com/playlist/2YDWwwhOXbWdxauZpn4rCV?si=90f9cc52769d451e Yeah
+#https://open.spotify.com/playlist/5XTrn3umqQv2eXNVapq3nS?si=208e08e467554555 Gang
+playlist_username <- 'Gang'
+playlist_uris <- c('5XTrn3umqQv2eXNVapq3nS')
+playlistVale <- get_playlist_audio_features(playlist_username, playlist_uris)
+```
+
+```{r}
+# PLOT LESS POPULARITY TRACKS ON SPECIFIC PLAYLIST
+playlistVale %>%
+  group_by(track.album.name) %>% 
+  ggplot(aes(x = track.album.name, y = valence)) + 
+  geom_col(aes(fill = track.album.name)) +
+  labs(x= "Track name", y= "Valence") + 
+  ggtitle("What are the least popular songs I listen to on Spotify?", "Popularity ranking < 50 in a specific playlist") +
+  theme(axis.text.x = element_text(angle = 90))
+
+playlistVale %>% 
+  group_by(track.album.name) %>% 
+  summarise(mean(valence)) %>% 
+  arrange(desc(`mean(valence)`)) %>% 
+  kable() %>% 
+  kable_styling(full_width = F, position = "left")
+
+```
+
+tolgo dati inutili dal df e aggiungo nome artista
+```{r}
+playlistVale_2 = playlistVale %>%
+  select(track.name, track.artists, track.album.name, danceability, energy, key, loudness, speechiness, acousticness, instrumentalness, liveness, valence, tempo, track.popularity, track.album.name, track.album.release_date) %>%
+  mutate(track.artists = map_chr(track.artists, function(x) x$name[1]))
+```
+
+
+```{r}
+p = ggplot(data = playlistVale_2, aes(x = valence, y = energy, color = track.artists)) +
+  geom_jitter(aes(text = track.name)) +
+  geom_vline(xintercept = 0.5) +
+  geom_hline(yintercept = 0.5) +
+  scale_x_continuous(expand = c(0, 0), limits = c(0, 1)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 1)) +
+  annotate('text', 0.25 / 2, 0.95, label = "Turbulent/Angry", fontface =
+             "bold") +
+  annotate('text', 1.75 / 2, 0.95, label = "Happy/Joyful", fontface = "bold") +
+  annotate('text', 1.75 / 2, 0.05, label = "Chill/Peaceful", fontface =
+             "bold") +
+  annotate('text', 0.25 / 2, 0.05, label = "Sad/Depressing", fontface =
+             "bold")
+
+ggplotly(p)
+
+```
+
+# What are your top 10 favorite artists, based on your tracks added as “Like”? guida internet
+You may have noticed that as many applications, with Spotify it is no stranger to give “likes” a.k.a. “♥” to songs or even entire albums that you listen to. Either from your desktop application, from the app, or from the web version, it is always available.
+
+Screenshot: “Like” on Iggy Pop’s track
+This greatly allows Spotify to improve its recommendation algorithm as well, in case you were wondering, to be able to make new suggestions on what else you could listen to based on your tastes.
+You can get an overview of all those tracks that you have added over time to your Spotify account at https://open.spotify.com/collection/tracks
+
+It is time to use the “get_my_saved_tracks()” function to obtain all the information regarding this complete collection of songs that at some point you have “liked”, generating a new data frame with a lot of new information. Spotify sets a request limit, you can get up to 50 items per request but you can get more with “offset”, to skip items and get more.
+```{r}
+# GET FAVORITE TRACKS
+#le ho già!
+```
+
+Okay, let’s back to our journey. First, let’s found out which artist is my favorite singer. I guess, it’s Taylor Swift! Once I am a freshman in University, I started to enjoy her music, and one decade almost past. No matterhow, let’s verify my hypothesis. First, Let’s get all the artist of my loved songs! Remember, the track.artists is stored as list, it’s easy to understand! Not every song is made by only one artist, is it? So we need to extract from lists in lists. Twice reduce operations are necessary here.
+
+
+After above operation, I extracted all the artists from all my loved songs. Time to count their appear times! Although, the names of artists are well-know, but we select the id as the mark of artist in this case. WHY? To avoid dulicated name. Then, we add n, as tracks number column, back to artist data.frame, and omit the duplicated records. After that, we remove id column, because it’s really meanless for human eyes, at least, in my opinion.
+```{r}
+topArtistFromSavedTracks
+```
+
+Bingo! Taylor is definitely my favorite artist. Following are Avril and Maroon 5, which are exactly in line with my prediction! However, tables are weak, graphics are stronger! Let’s check how the column plot looks like! BTW, ggplot2 package has been loaded with tidyverse packages bundle, we don’t need to load (ggplot2) again.
+```{r}
+# For numerical variables, sometimes for simplifying problems, cut them into fractions is a good idea. Here, we go further, we fill the column plot with different color to represent different frequency group.
+
+#fatto di la!
+```
+
+# cosa finale guida bella explore your activity bla bla
+```{r}
+# GET FEATURES TOP FIVE FAVORITE ARTISTS
+favArtist1 <- get_artist_audio_features(artist= "Taylor Swift")
+favArtist2 <- get_artist_audio_features(artist= "Lana Del Rey")
+favArtist3 <- get_artist_audio_features(artist= "Demi Lovato")
+favArtist4 <- get_artist_audio_features(artist= "Avril Lavigne")
+favArtist5 <- get_artist_audio_features(artist= "Lorde")
+
+#CAMBIARE E TOGLIERE GLI ALBUM INUTILI!!! TENERE SOLO QUELLI IMPORTANTI
+#prendo solo gli album utili per tay
+favArtist1 <- favArtist1[which(favArtist1$album_name %in% c("1989 (Deluxe)","evermore (deluxe version)", "Fearless (Platinum Edition)", "Fearless (Taylor's Version)", "folklore (deluxe version)", "Lover", "Red (Deluxe Edition)", "reputation", "Speak Now (Deluxe Package)", "Taylor Swift")),]
+
+#prendo le canzoni uniche, non ripetute
+favArtist1 <- favArtist1 %>%
+  distinct(track_name, .keep_all = TRUE)
+
+#prendo solo gli album utili per lana
+favArtist2 <- favArtist2[which(favArtist2$album_name %in% c("Born To Die – Paradise Edition (Special Version)", "Chemtrails Over The Country Club", "Honeymoon", "Lust For Life", "Norman Fucking Rockwell!", "Ultraviolence (Deluxe)")),]
+
+#prendo le canzoni uniche, non ripetute
+favArtist2 <- favArtist2 %>%
+  distinct(track_name, .keep_all = TRUE) # per tenere anche le altre colonne, di default tiene solo track_name
+
+#prendo solo gli album utili per demi
+favArtist3 <- favArtist3[which(favArtist3$album_name %in% c("Confident (Deluxe Edition)", "Dancing With The Devil…The Art of Starting Over (Expanded Edition)", "Demi (Deluxe)", "Don't Forget", "Here We Go Again (European Version)", "Tell Me You Love Me (Deluxe)", "Unbroken (Deluxe Edition)")),]
+
+#prendo le canzoni uniche, non ripetute
+favArtist3 <- favArtist3 %>%
+  distinct(track_name, .keep_all = TRUE)
+
+#avril è okay
+
+#prendo solo gli album utili per lorde
+favArtist5 <- favArtist5[which(favArtist5$album_name %in% c("Melodrama", "Pure Heroine (Extended)")),]
+
+#prendo le canzoni uniche, non ripetute
+favArtist5 <- favArtist5 %>%
+  distinct(track_name, .keep_all = TRUE)
+
+# MAKE A SINGLE DATA FRAME
+topFiveArtists <- rbind(favArtist1, favArtist2, favArtist3, favArtist4, favArtist5)
+# PLOT EMOTIONAL QUADRANT TOP FOUR ARTISTS
+emotionalQuadrant <- ggplot(data = topFiveArtists, aes(x = valence, y = energy, color = artist_name)) +
+  geom_jitter(aes(text = track_name)) +
+  geom_vline(xintercept = 0.5) +
+  geom_hline(yintercept = 0.5) +
+  scale_x_continuous(expand = c(0, 0), limits = c(0, 1)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 1)) +
+  annotate('text', 0.25 / 2, 0.95, label = "Angry / Turbulent") +
+  annotate('text', 1.75 / 2, 0.95, label = "Joyful / Happy") +
+  annotate('text', 1.75 / 2, 0.05, label = "Peace / Chill") +
+  annotate('text', 0.25 / 2, 0.05, label = "Depressing / Sad") +
+  labs(x= "Valence", y= "Energy") +
+  ggtitle("Emotional quadrant Top five artists", "Based on energy y valence")  
+ggplotly(emotionalQuadrant)
+```
+
+# The stats for all songs by Spotify!
+```{r}
+library(gridExtra)
+danceability <-
+  ggplot(favArtist1, aes(x = album_release_year, y = danceability)) +
+  geom_point(color = "purple", alpha = 0.2) +
+  geom_smooth(se = FALSE) +
+  xlab('Album Release Year')+
+  ylab('Danceability')
+energy <- ggplot(favArtist1, aes(x = album_release_year, y = energy)) +
+  geom_point(color = "red", alpha = 0.2) +
+  geom_smooth(se = FALSE) +
+  xlab('Album Release Year')+
+  ylab('Energy')
+speechiness <-
+  ggplot(favArtist1, aes(x = album_release_year, y = speechiness)) +
+  geom_point(color = "lightblue", alpha = 0.2) +
+  geom_smooth(se = FALSE) +
+  xlab('Album Release Year')+
+  ylab('Speechiness')
+liveness <- ggplot(favArtist1, aes(x = album_release_year, y = liveness)) +
+  geom_point(color = "green", alpha = 0.2) +
+  geom_smooth(se = FALSE) +
+  xlab('Album Release Year')+
+  ylab('Liveness')
+valence <- ggplot(favArtist1, aes(x = album_release_year, y = valence)) +
+  geom_point(color = "blue", alpha = 0.2) +
+  geom_smooth(se = FALSE) +
+  xlab('Album Release Year')+
+  ylab('Valence')
+duration_ms <-
+  ggplot(favArtist1, aes(x = album_release_year, y = duration_ms)) +
+  geom_point(color = "orange", alpha = 0.2) +
+  geom_smooth(se = FALSE) +
+  xlab('Album Release Year')+
+  ylab('Duration ms')
+grid.arrange(danceability,
+             energy,
+             speechiness,
+             liveness,
+             valence,
+             duration_ms)
+```
+
+# con boxplot
+```{r}
+top_danceability <-
+  ggplot(favArtist1, aes(x = album_release_year, y = danceability)) +
+  geom_boxplot(fill = "purple") +
+  xlab('Album Release Year')+
+  ylab('Danceability')
+top_energy <-
+  ggplot(favArtist1, aes(x = album_release_year, y = energy)) +
+  geom_boxplot(fill = "red") +
+  xlab('Album Release Year')+
+  ylab('Energy')
+top_speechiness <-
+  ggplot(favArtist1, aes(x = album_release_year, y = speechiness)) +
+  geom_boxplot(fill = "lightblue") +
+  xlab('Album Release Year')+
+  ylab('Speechiness')
+top_liveness <-
+  ggplot(favArtist1, aes(x = album_release_year, y = liveness)) +
+  geom_boxplot(fill = "green") +
+  xlab('Album Release Year')+
+  ylab('Liveness')
+top_valence <-
+  ggplot(favArtist1, aes(x = album_release_year, y = valence)) +
+  geom_boxplot(fill = "blue") +
+  xlab('Album Release Year')+
+  ylab('Valence')
+top_duration_ms <-
+  ggplot(favArtist1, aes(x = album_release_year, y = duration_ms)) +
+  geom_boxplot(fill = "orange") +
+  xlab('Album Release Year')+
+  ylab('Duration ms')
+grid.arrange(
+  top_danceability,
+  top_energy,
+  top_speechiness,
+  top_liveness,
+  top_valence,
+  top_duration_ms
+)
+
+```
+
+# Spotify median stats in the time!
+```{r}
+
+# danceability
+#tay
+year_median_danceability1 = favArtist1 %>%
+  group_by(album_release_date, album_name) %>%
+  summarise(median_danceability = mean(danceability))
+
+year_median_danceability_graph1 <-
+  year_median_danceability1 %>%
+  ggplot(aes(x = album_release_date, y = median_danceability, group = 1)) +
+  geom_line(color = "purple") +
+  geom_point(aes(color = album_name)) +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 90))
+
+danTay <- ggplotly(year_median_danceability_graph1)
+
+#lana
+year_median_danceability2 = favArtist2 %>%
+  group_by(album_release_date, album_name) %>%
+  summarise(median_danceability = mean(danceability))
+
+year_median_danceability_graph2 <-
+  year_median_danceability2 %>%
+  ggplot(aes(x = album_release_date, y = median_danceability, group = 1)) +
+  geom_line(color = "purple") +
+  geom_point(aes(color = album_name)) +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 90))
+
+danLana <- ggplotly(year_median_danceability_graph2)
+danTay
+danLana
+
+#energy
+
+year_median_energy = favArtist1 %>%
+  group_by(album_release_date, album_name) %>%
+  summarise(median_energy = mean(energy))
+
+year_median_energy_graph <-
+  year_median_energy %>%
+  ggplot(aes(x = album_release_date, y = median_energy, group = 2)) +
+  geom_line(color = "red") +
+  geom_point(aes(color = album_name)) +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 90))
+
+en <- ggplotly(year_median_energy_graph)
+
+#valence
+
+year_median_valence = favArtist1 %>%
+  group_by(album_release_date, album_name) %>%
+  summarise(median_valence = mean(valence))
+
+year_median_valence_graph <-
+  year_median_valence %>%
+  ggplot(aes(x = album_release_date, y = median_valence, group = 3)) +
+  geom_line(color = "lightblue") +
+  geom_point(aes(color = album_name)) +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 90))
+
+val <- ggplotly(year_median_valence_graph)
+
+
+#duration in ms
+year_median_duration_ms = favArtist1 %>%
+  group_by(album_release_date, album_name) %>%
+  summarise(median_duration_ms = mean(duration_ms))
+
+year_median_duration_ms_graph <-
+  year_median_duration_ms %>%
+  ggplot(aes(x = album_release_date, y = median_duration_ms, group = 4)) +
+  geom_line(color = "lightgreen") +
+  geom_point(aes(color = album_name)) +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 90))
+
+dur <- ggplotly(year_median_duration_ms_graph)
+#par(mfrow = c(2, 2))
+#subplot(dan, en, val, dur, nrows = 2, shareX = TRUE)
+
+```
+
+
+
+
+# Spotify Audio Analysis
+I’m not going to get too much into this because there’s tons of documentation to be found here, but to summarize; Spotify’s API gives you the ability to extract several audio features of a song. The available features that also have been used for this analysis are:
+- Danceability: Danceability describes how suitable a track is for dancing based on a combination of musical elements      including tempo, rhythm stability, beat strength, and overall regularity. A value of 0.0 is least danceable and 1.0     is most danceable.
+- Acousticness: A measure from 0.0 to 1.0 of whether the track is acoustic.
+- Energy: Energy is a measure from 0.0 to 1.0 and represents a perceptual measure of intensity and activity. Typically,    energetic tracks feel fast, loud, and noisy.
+- Instrumentalness: Predicts whether a track contains no vocals. The closer the instrumentalness value is to 1.0, the      greater likelihood the track contains no vocal content.
+- Liveness: Detects the presence of an audience in the recording. Higher liveness values represent an increased            probability that the track was performed live.
+- Loudness: The overall loudness of a track in decibels (dB). Loudness values are averaged across the entire track.        Values typical range between -60 and 0 db.
+- Speechiness: Speechiness detects the presence of spoken words in a track. The more exclusively speech-like the           recording (e.g. talk show, audio book, poetry), the closer to 1.0 the attribute value.
+- Tempo: The overall estimated tempo of a track in beats per minute (BPM). In musical terminology, tempo is the speed or    pace of a given piece and derives directly from the average beat duration.
+- Valence: A measure from 0.0 to 1.0 describing the musical positiveness conveyed by a track. Tracks with high valence     sound more positive (e.g. happy, cheerful, euphoric), while tracks with low valence sound more negative (e.g. sad,      depressed, angry).
+
+# altro modo
+KEY HELPER:
+POPULARITY: MEASURE THE POPULARITY BASED ON PLAY NUMBER OF THE TRACK
+VALENCE: A MEASURE OF HAPPINESS
+LIVENESS: DETECTS THE PRESENCE OF AN AUDIENCE IN THE RECORDING.
+SPEECHINESS: DETECTS THE PRESENCE OF SPOKEN WORDS IN A TRACK.
+ENERGY: REPRESENTS A PERCEPTUAL MEASURE OF INTENSITY AND ACTIVITY.
+DANCEABILITY: DESCRIBES HOW SUITABLE A TRACK IS FOR DANCING BASED

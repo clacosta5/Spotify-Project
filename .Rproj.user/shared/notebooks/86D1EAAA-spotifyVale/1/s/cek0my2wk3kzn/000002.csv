@@ -1,0 +1,13 @@
+"0",""
+"0","timeDay <- mySpotify %>% "
+"0","  filter(date >= ""2020-01-01"") %>% "
+"0","  group_by(date, hour = hour(endTime)) %>% "
+"0","  summarize(minutesListened = sum(minutes)) %>% "
+"0","  ggplot(aes(x = hour, y = date, fill = minutesListened)) + "
+"0","  geom_tile() + "
+"0","  labs(x= ""Time of the day"", y= ""Date"") + "
+"0","  ggtitle(""When has there been more playback activity on my Spotify?"", ""Activity by date and time of day"") +"
+"0","  scale_fill_gradient(low = ""green"", high = ""blue"")"
+"2","`summarise()` has grouped output by 'date'. You can override using the `.groups` argument.
+"
+"0","timeDay"

@@ -1,0 +1,41 @@
+"0",""
+"0","#per controllare"
+"0","prova = mySpotify %>% "
+"0","  group_by(artistName, date = floor_date(date, ""month"")) %>%  #raggruppo per ascolto mensile"
+"0","  summarize(hours = sum(minutes) / 60)"
+"2","`summarise()` has grouped output by 'artistName'. You can override using the `.groups` argument.
+"
+"0","oreArtista <- mySpotify %>% "
+"0","  group_by(artistName, date = floor_date(date, ""month"")) %>%  #raggruppo per ascolto mensile"
+"0","  summarize(hours = sum(minutes) / 60) %>% "
+"0","  ggplot(aes(x = date, y = hours, group = artistName)) +"
+"0","  geom_line(aes(color = artistName)) +"
+"0","  geom_point(aes(color = artistName)) +"
+"0","  labs(x= ""date"", y= ""ore di ascolto"") + "
+"0","  ggtitle(""In che mese ho ascoltato più o meno musica di uno specifico artista?"" ,""prendo in considerazione: Taylor Swift, Lana Del Rey, Chase Atlantic"") +"
+"0","  gghighlight(artistName == ""Taylor Swift"" || artistName == ""Lana Del Rey"" || artistName == ""Chase Atlantic"" || artistName == ""Lorde"" || artistName == ""blink-182"") "
+"2","`summarise()` has grouped output by 'artistName'. You can override using the `.groups` argument.
+"
+"2","label_key: artistName
+"
+"0","ggplotly(oreArtista)"
+"2","geom_GeomLabelRepel() has yet to be implemented in plotly.
+  If you'd like to see this geom implemented,
+  Please open an issue with your example code at
+  https://github.com/ropensci/plotly/issues"
+"2","geom_GeomLabelRepel() has yet to be implemented in plotly.
+  If you'd like to see this geom implemented,
+  Please open an issue with your example code at
+  https://github.com/ropensci/plotly/issues"
+"2","geom_GeomLabelRepel() has yet to be implemented in plotly.
+  If you'd like to see this geom implemented,
+  Please open an issue with your example code at
+  https://github.com/ropensci/plotly/issues"
+"2","geom_GeomLabelRepel() has yet to be implemented in plotly.
+  If you'd like to see this geom implemented,
+  Please open an issue with your example code at
+  https://github.com/ropensci/plotly/issues"
+"2","geom_GeomLabelRepel() has yet to be implemented in plotly.
+  If you'd like to see this geom implemented,
+  Please open an issue with your example code at
+  https://github.com/ropensci/plotly/issues"
