@@ -1,3 +1,0 @@
-"0","playlistJuly_2 = playlistJuly %>%"
-"0","  select(track.name, track.artists, track.album.name, danceability, energy, key, loudness, speechiness, acousticness, instrumentalness, liveness, valence, tempo, track.popularity, track.album.name, track.album.release_date) %>%"
-"0","  mutate(track.artists = map_chr(track.artists, function(x) x$name[1]))"

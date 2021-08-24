@@ -1,6 +1,0 @@
-"0","library(devtools)
-devtools::install_github('charlie86/spotifyr')
-"
-"2","Skipping install of 'spotifyr' from a github remote, the SHA1 (1bc55d52) has not changed since last install.
-  Use `force = TRUE` to force installation
-"
