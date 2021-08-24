@@ -635,7 +635,6 @@ get_my_recently_played(limit = 5) %>%
 ## artisti più ascoltati long term
 
 ```{r}
-ciao
 genereLong50 = get_my_top_artists_or_tracks(type = 'artists', time_range = 'long_term', limit = 50) %>%
     select(name, genres, popularity, followers.total) %>% 
     rowwise %>% 
