@@ -1,9 +1,0 @@
-"0","a = get_my_top_artists_or_tracks(type = 'tracks', time_range = 'long_term', limit = 10) %>% 
-        mutate(artist.name = map_chr(artists, function(x) x$name[1])) %>% 
-        select(name, popularity, artist.name, album.name, album.release_date) 
-"
-"2","Auto-refreshing stale OAuth token.
-"
-"0","        #kable()"
-"0","#kable(a, format = ""simple"", caption = ""Top 10 Songs"")"
-"0","formattable(a, list(`popularity` = color_bar(""lightgreen"")))"

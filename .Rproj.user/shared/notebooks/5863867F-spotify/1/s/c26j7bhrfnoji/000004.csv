@@ -1,4 +1,0 @@
-"0",""
-"0","a %>%"
-"0","    kbl(caption = ""Top 10 Songs"") %>%"
-"0","    kable_paper(""hover"", html_font = ""Lucida Bright"")"

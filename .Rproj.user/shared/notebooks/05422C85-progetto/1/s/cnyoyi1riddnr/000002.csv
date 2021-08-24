@@ -1,8 +1,0 @@
-"0",""
-"0","popu <- ggplot(playlists, aes(x=track.popularity, fill=playlist_name))+"
-"0","  geom_density(alpha=0.7, color=NA, text = ~paste('count: ', ..count..))+"
-"0","  scale_fill_manual(values=c(green, yellow, pink, blue))+"
-"0","  labs(x=""Popularity"", y=""count"") +"
-"0","  ggtitle(""Popularity nelle 4 playlist"")"
-"0",""
-"0","ggplotly(popu)"
