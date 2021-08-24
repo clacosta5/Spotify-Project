@@ -1,0 +1,8 @@
+"0",""
+"0","ts <- get_artist_audio_features('Taylor Swift')"
+"0",""
+"0",""
+"0","ts %>% "
+"0","    count(key_mode, sort = TRUE) %>% "
+"0","    head(5) %>% "
+"0","    kable()"

@@ -1,0 +1,17 @@
+base
+knitr
+rmdformats
+jsonlite
+lubridate
+ggplot2
+gghighlight
+spotifyr
+tidyverse
+tibble
+tidyr
+readr
+purrr
+dplyr
+stringr
+forcats
+plotly

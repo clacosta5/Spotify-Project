@@ -1,0 +1,10 @@
+"0","weekDay <- hoursDay %>% "
+"0","  group_by(weekday, hour) %>% "
+"0","  summarize(minutes = sum(minutesListened)) %>% "
+"0","  ggplot(aes(x = hour, y = minutes, color = weekday)) + "
+"0","  geom_line() +"
+"0","  labs(x= ""Time of the day"", y= ""Minutes of music playback"") + "
+"0","  ggtitle(""What weekday and time of day I've listened to the most music on Spotify?"", ""Line chart - Weekly activity from 0 to 24 hours"") "
+"2","`summarise()` has grouped output by 'weekday'. You can override using the `.groups` argument.
+"
+"0","weekDay"

@@ -1,0 +1,12 @@
+"0","#primo periodo"
+"0","giornoUno = hoursDayUno %>% "
+"0","  group_by(weekday, ora) %>%"
+"0","  summarize(minutes = sum(minutiAscoltati)) %>% "
+"0","  ggplot(aes(x = ora, weekday, fill = minutes)) + "
+"0","  geom_tile() + "
+"0","  scale_fill_gradient(low = ""green"", high = ""blue"") +"
+"0","  labs(x= ""Ora del giorno"", y= ""Giorno della settimana"") + "
+"0","  ggtitle(""In quale giorno della settimana e ora del giorno ho ascoltato più musica?"")"
+"2","Error in UseMethod(""group_by"") : 
+  no applicable method for 'group_by' applied to an object of class ""c('gg', 'ggplot')""
+"

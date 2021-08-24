@@ -1,0 +1,520 @@
+---
+title: "my Spotify"
+author: "cla"
+date: "15/4/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(jsonlite)
+library(lubridate)
+library(gghighlight)
+library(spotifyr)
+library(tidyverse)
+library(knitr)
+library(ggplot2)
+library(plotly)
+#GUIDE
+#https://towardsdatascience.com/explore-your-activity-on-spotify-with-r-and-spotifyr-how-to-analyze-and-visualize-your-stream-dee41cb63526
+
+
+streamHistory <- fromJSON("spotify_data/StreamingHistoryTotal.json", flatten = TRUE)
+myLibrary <- fromJSON("spotify_data/secondRequest/YourLibrary.json", flatten = TRUE)
+savedTracks <- myLibrary$tracks
+
+# cambiare ora!!! perchè orario di greenwitch
+#tz = a character string that specifies which time zone to parse the date with. The string must be a time zone that is #recognized by the user's OS.
+a <- ymd_hm(streamHistory$endTime, tz = "Etc/GMT+0")
+#cambio l'orario con quello del fuso di ROma
+streamHistory2 <- streamHistory %>%
+  mutate(endTime = with_tz(a, "Europe/Rome"))
+```
+
+On what dates did you listen to more or less music on Spotify?
+This is the first question that you could answer. Starting from our variables, you can define the hours, minutes and seconds, and basically any temporality. You can make a first plot to observe the behavior of your activity on Spotify throughout the year, per week for example.
+# PLAYBACK ACTIVITY PER WEEK AND HOURS
+```{r}
+# ADDING DATE AND TIMING
+# prova con i secondi
+mySpotify = streamHistory2 %>% 
+  as_tibble() %>% #as_tibble() turns an existing object, such as a data frame or matrix, into a so-called tibble, a data                   #frame with class tbl_df
+  mutate_at("endTime", ymd_hms) %>%  #aggiungo i secondi
+  mutate(date = floor_date(endTime, "day") %>% as_date, seconds = msPlayed / 1000, minutes = seconds / 60) %>%
+  mutate(artistName = str_replace(artistName, "Sasha Sloan", "Sasha Alex Sloan"))
+# date -> prendo la data e basta senza orario, ricavo secondi e minuti suonati
+
+
+oreStreaming = mySpotify %>% 
+  filter(date >= "2020-01-01") %>% 
+  group_by(date) %>% 
+  group_by(date = floor_date(date, "week")) %>%  # raggruppo per settimane
+  summarize(ore = sum(minutes) / 60) %>%         # sommo i minuti di ogni settimana / 60 = ore
+  #verb summarise() riduce più valori fino a un singolo riassunto
+  arrange(date) %>%                              # metto in ordine di data crescente
+  ggplot(aes(x = date, y = ore)) + 
+  geom_col(aes(fill = ore)) +
+  scale_fill_gradient(low = "blue", high = "red") + 
+  labs(x= "data", y= "ore di ascolto") + 
+  ggtitle("In che date ho ascoltato più o meno musica su Spotify?", "Attività di ascolto per settimana da aprile 2020 a aprile 2021")
+
+ggplotly(oreStreaming)
+```
+As a result, you will get a plot like the following one, wherein in my case, the decrease in the use of Spotify after April is very visible. Perhaps to a large extent, this is because in April 2020, when we were forced to work from home (and to date) by covid-19, the times when I most enjoyed listening to music were at the office, and today working at home we take turns playing each one their music on their platforms.
+
+
+
+On what dates did you listen to more or less music by a specific artist?
+Another question that you could answer in a very simple way and visualize with a line chart, you can also highlight the results you are looking for using the “gghighlight” library, and through the artistName variable.
+# PLAYBACK ACTIVITY PER SPECIFIC ARTIST
+```{r}
+
+#per controllare
+prova = mySpotify %>% 
+  group_by(artistName, date = floor_date(date, "month")) %>%  #raggruppo per ascolto mensile
+  summarize(hours = sum(minutes) / 60)
+
+oreArtista <- mySpotify %>% 
+  group_by(artistName, date = floor_date(date, "month")) %>%  #raggruppo per ascolto mensile
+  summarize(hours = sum(minutes) / 60) %>% 
+  ggplot(aes(x = date, y = hours, group = artistName)) +
+  geom_line(aes(color = artistName)) +
+  geom_point(aes(color = artistName)) +
+  labs(x= "date", y= "ore di ascolto") + 
+  ggtitle("In che mese ho ascoltato più o meno musica di uno specifico artista?" ,"prendo in considerazione: Taylor Swift, Lana Del Rey, Chase Atlantic") +
+  gghighlight(artistName == "Taylor Swift" || artistName == "Lana Del Rey" || artistName == "Chase Atlantic" || artistName == "Lorde" || artistName == "blink-182") 
+
+ggplotly(oreArtista)
+```
+What were the artists you listened to the most on your Spotify?
+You can set a minimum of playing hours and find out from there which artists you listened to the most. For example, let’s say that you consider that the most listened to were those artists to whom you dedicated at least 3 hours of playback or more.
+# MOST LISTENED ARTISTS (MORE THAN 10 HOURS)
+```{r}
+
+minutesMostListened <- mySpotify %>% 
+  filter(date >= "2020-01-01") %>% 
+  group_by(artistName) %>% 
+  summarize(minutesListened = sum(minutes)) %>% 
+  filter(minutesListened >= 600) %>%
+  ggplot(aes(x = artistName, y = minutesListened)) + 
+  geom_col(aes(fill = minutesListened, text = (minutesListened/60))) +
+  scale_fill_gradient(low = "blue", high = "red") + 
+  labs(x= "Artist", y= "Minutes of music playback") + 
+  ggtitle("What were the most listened artists on my Spotify? (> 10 ore di ascolto)") +
+  theme(axis.text.x = element_text(angle = 90))
+ggplotly(minutesMostListened)
+```
+
+At what time have you had the most playback activity on your Spotify?
+You could view by the hour of the day inclusive, the activity log of your complete history with a heatmap, to observe how this habit has changed over time if it is the case.
+# PLAYBACK ACTIVITY BY DATE AND TIME OF DAY
+```{r}
+
+timeDay <- mySpotify %>% 
+  filter(date >= "2020-01-01") %>% 
+  group_by(date, hour = hour(endTime)) %>% 
+  summarize(minutesListened = sum(minutes)) %>% 
+  ggplot(aes(x = hour, y = date, fill = minutesListened)) + 
+  geom_tile() + 
+  labs(x= "Time of the day", y= "Date") + 
+  ggtitle("When has there been more playback activity on my Spotify?", "Activity by date and time of day") +
+  scale_fill_gradient(low = "green", high = "blue")
+timeDay
+```
+You can also create a bar chart to take a closer look in detail at the times of the day when there is a record of the highest activity on your account.
+# PLAYBACK ACTIVITY BY TIME OF THE DAY
+```{r}
+
+hoursDay <- mySpotify %>% 
+  filter(date >= "2020-01-01") %>% 
+  group_by(date, hour = hour(endTime), weekday = wday(date, label = TRUE))%>% 
+  summarize(minutesListened = sum(minutes))
+  hoursDay %>% 
+  ggplot(aes(x = hour, y = minutesListened, group = date)) +
+  geom_col(fill = "#66b2ff") +
+  labs(x= "Time of the day", y= "Minutes of music playback") + 
+  ggtitle("What time of day I've listened to the most music on Spotify?", "Activity from 0 to 24 hours")
+  
+
+```
+
+
+What days of the week do you have the most playback activity on your Spotify?
+You can also answer this question by creating another heatmap, but this time visualizing the relationship between day of the week and time of day.
+# PLAYBACK ACTIVITY BY TIME OF THE DAY AND WEEKDAY
+```{r}
+
+giorno = hoursDay %>% 
+  group_by(weekday, hour) %>% 
+  summarize(minutes = sum(minutesListened)) %>% 
+  ggplot(aes(x = hour, weekday, fill = minutes)) + 
+  geom_tile() + 
+  scale_fill_gradient(low = "green", high = "blue") +
+  labs(x= "Time of the day", y= "Weekday") + 
+  ggtitle("What weekday and time of day I've listened to the most music on Spotify?", "Weekly activity from 0 to 24 hours")
+
+ggplotly(giorno)
+```
+Another way in which you can take a look at the details previously obtained could be by creating a line chart.
+# PLAYBACK ACTIVITY BY TIME OF THE DAY AND WEEKDAY - LINE CHART
+```{r}
+weekDay <- hoursDay %>% 
+  group_by(weekday, hour) %>% 
+  summarize(minutes = sum(minutesListened)) %>% 
+  ggplot(aes(x = hour, y = minutes, color = weekday)) + 
+  geom_line() +
+  labs(x= "Time of the day", y= "Minutes of music playback") + 
+  ggtitle("What weekday and time of day I've listened to the most music on Spotify?", "Line chart - Weekly activity from 0 to 24 hours") 
+weekDay
+```
+I can see in my case that Sundays are definitely the days that I listen to music the least. You will get as a result a plot similar to the following one where you can also see which is the day when you have the least playback activity.
+
+# PLAYBACK ACTIVITY BY DAY TYPE
+```{r}
+dayType <- hoursDay %>% 
+  mutate(day_type = if_else(weekday %in% c("sab", "dom"), "weekend", "weekday")) %>% 
+  group_by(day_type, hour) %>% 
+  summarize(minutes = sum(minutesListened)) %>% 
+  ggplot(aes(x = hour, y = minutes, color = day_type)) + 
+  geom_line() +
+  labs(x= "Time of the day", y= "Minutes of music playback") + 
+  ggtitle("What day type I've listened to the most music on Spotify?", "Weekday and weekend activity from 0 to 24 hours") 
+ggplotly(dayType)
+```
+
+# aggiungo ultime canzoni di Lorde a mano fuck
+```{r}
+
+savedTracks = savedTracks %>%
+  add_row(artist = "Lorde", album = "Pure Heroine", track = "Buzzcut Season", uri = "spotify:track:3ShTaJBCOclymogQNzPde7") %>%
+  add_row(artist = "Lorde", album = "Pure Heroine", track = "Glory And Gore", uri = "spotify:track:0SK9wxN40P6jlcMfTSAe0V") %>%
+  add_row(artist = "Lorde", album = "Pure Heroine", track = "Still Sane", uri = "spotify:track:0t1D6NQt3uhZnam0yg8Wv3") %>%
+  add_row(artist = "Lorde", album = "Pure Heroine", track = "White Teeth Teens", uri = "spotify:track:15LzvCtoJWwsrTWJMWUTOv") %>%
+  add_row(artist = "Lorde", album = "Pure Heroine", track = "A World Alone", uri = "spotify:track:2HLnzsXJ3mD9UWAa3RY89n") %>%
+  add_row(artist = "Lorde", album = "Pure Heroine", track = "Bravado", uri = "spotify:track:02ZorlDGq0uTnMobHNh4EL") %>%
+  add_row(artist = "Lorde", album = "Pure Heroine", track = "Million DOllar Bills", uri = "spotify:track:3Lw7lWTJlcqlx8E9HFmByr") %>%
+  add_row(artist = "Lorde", album = "Pure Heroine", track = "The Love Club", uri = "spotify:track:2yrJ1jWo3HLksJFUqUsZE4") %>%
+  add_row(artist = "Lorde", album = "Pure Heroine", track = "Biting Down", uri = "spotify:track:45UvXCltvMpEPNLGzG0NYk") %>%
+  add_row(artist = "Lorde", album = "Pure Heroine", track = "Swingin Party", uri = "spotify:track:7otV7kSzDMo11qLlw8pAtr") %>%
+  add_row(artist = "Lorde", album = "The Hunger Games: Mockingjay Pt.1 (Original Motion Picture Soundtrack)", track = "Meltdown", uri = "spotify:track:27qvbQ10N5uoqXvYT9MqZt") %>%
+  add_row(artist = "Lorde", album = "Caracal (Deluxe)", track = "Magnets", uri = "spotify:track:7nRmfGNhHKEEu5o8yFXLXt") %>%
+  add_row(artist = "Lorde", album = "MTV Unplugged", track = "Don't Take The Money", uri = "spotify:track:25wTebB8ECapFHWRPywpYR") %>%
+  add_row(artist = "Lorde", album = "Alternate Worlds", track = "Easy", uri = "spotify:track:0rkqMaZsWZzfdz4brrhS14") %>%
+  add_row(artist = "Lorde", album = "The Hunger Games: Mockingjay Pt.1 (Original Motion Picture Soundtrack)", track = "Yellow Flicker Beat", uri = "spotify:track:0HVINS0AfIuck7csStOEHP")
+  
+```
+
+
+# PROVA CON MY SAVED TRACKS!
+```{r}
+topArtistFromSavedTracks = savedTracks %>%
+  group_by(artist) %>%
+  count(artist) %>%
+  arrange(-n)
+
+
+  
+  # PLOT TOP 10 ARTISTS BASED ON LIKED TRACKS
+plotMyFavs <- topArtistFromSavedTracks %>%
+  filter(n >= 11) %>%
+  mutate(freq = case_when(n > 100 ~ '> 100 tracks',
+      between(n, 50, 99) ~ '50-99 tracks',
+      between(n, 20, 49) ~ '20-49 tracks',
+      TRUE ~ '< 20 tracks')) %>%
+  mutate(freq = factor(freq, levels = c('> 100 tracks', '50-99 tracks', '20-49 tracks', '< 20 tracks'))) %>%
+  ggplot(mapping = aes(x = reorder(artist, -n), y = n, fill = freq)) +
+  geom_col() +
+  #scale_fill_brewer(palette="Spectral") +
+  labs(x= "Artist name", y= "Number of tracks", fill = NULL) +
+  ggtitle("What are my Top 10 favorite artists? Based on my ♥ tracks") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = -60),
+        axis.title = element_text(face = 'bold'),
+        plot.title = element_text(hjust = 0.5, face = 'bold', size = 15),
+        plot.caption = element_text(hjust = 1,face = 'bold.italic'))
+ggplotly(plotMyFavs)
+#taylor complete collection: 267 brani
+#lana comlete collection: 107 brani
+```
+
+# provo a capire quante volte ho ascoltato le canzoni su streamHistory2
+```{r}
+mostStreamedSongs = streamHistory2 %>%
+  filter(msPlayed >= 50000) %>% #50 secondi
+  group_by(trackName, artistName) %>%
+  count(trackName) %>%
+  arrange(-n) %>%
+  filter(n >= 40)
+
+mostStreamedArtist = mostStreamedSongs %>%
+  group_by(artistName) %>%
+  count(artistName) %>%
+  arrange(-n)
+
+#provo grafico, nei 2 assi n volte e titolo brano, colore artista
+#n come colore?
+#y frequenza e x top 50
+#x artista, y numerosità
+
+p <- mostStreamedSongs %>%
+  ggplot(aes(x = reorder(trackName, -n), y = n, fill = artistName)) +
+  geom_col() +
+  theme(axis.text.x = element_blank())
+
+
+ggplotly(p)
+```
+
+
+# top album dalle canzoni salvate
+not so useful sad
+```{r}
+savedAlbum <- savedTracks %>%
+  group_by(album, artist) %>%
+  count(album) %>%
+  arrange(-n)
+
+savedAlbum
+```
+
+
+
+
+# playlist create da Spotify alla fine di ogni anno
+
+## top brani 2017
+
+```{r top 2017}
+#https://open.spotify.com/playlist/37i9dQZF1E9FJEP9PWRheR?si=ea8932d87a154e07
+playlist_username <- 'Your Top Songs 2017'
+playlist_uris <- c('37i9dQZF1E9FJEP9PWRheR')
+top2017 <- get_playlist_audio_features(playlist_username, playlist_uris)
+
+top2017 = top2017 %>%
+  select(playlist_name, track.name, track.artists, track.album.name, danceability, energy, key, loudness, speechiness, acousticness, instrumentalness, liveness, valence, tempo, track.popularity, track.album.name, track.album.release_date, track.explicit) %>%
+  mutate(track.artists = map_chr(track.artists, function(x) x$name[1]))
+
+# trovo la media dei valori
+danceabilityMean <- mean(top2017$danceability)
+energyMean <- mean(top2017$energy)
+valenceMean <- mean(top2017$valence)
+acousticnessMean <- mean(top2017$acousticness)
+instrumentalnessMean <- mean(top2017$instrumentalness)
+#popularityMean <- mean(top2017$track.popularity)
+
+
+medie2017 <- c('2017', danceabilityMean, energyMean, valenceMean, acousticnessMean, instrumentalnessMean)
+
+
+```
+
+
+## top brani 2018
+
+```{r top 2018}
+#https://open.spotify.com/playlist/37i9dQZF1EjfranIQArQ2U?si=5d162287d9774586
+playlist_username <- 'Your Top Songs 2018'
+playlist_uris <- c('37i9dQZF1EjfranIQArQ2U')
+top2018 <- get_playlist_audio_features(playlist_username, playlist_uris)
+
+top2018 = top2018 %>%
+  select(playlist_name, track.name, track.artists, track.album.name, danceability, energy, key, loudness, speechiness, acousticness, instrumentalness, liveness, valence, tempo, track.popularity, track.album.name, track.album.release_date, track.explicit) %>%
+  mutate(track.artists = map_chr(track.artists, function(x) x$name[1]))
+
+# trovo la media dei valori
+danceabilityMean8 <- mean(top2018$danceability)
+energyMean8 <- mean(top2018$energy)
+valenceMean8 <- mean(top2018$valence)
+acousticnessMean8 <- mean(top2018$acousticness)
+instrumentalnessMean8 <- mean(top2018$instrumentalness)
+#popularityMean <- mean(top2018$track.popularity)
+
+
+medie2018 <- c('2018', danceabilityMean8, energyMean8, valenceMean8, acousticnessMean8, instrumentalnessMean8)
+
+```
+
+
+## top brani 2019
+
+```{r top 2019}
+#https://open.spotify.com/playlist/37i9dQZF1EtmegcOrpENaV?si=13e542efbe6a43a5
+playlist_username <- 'Your Top Songs 2019'
+playlist_uris <- c('37i9dQZF1EtmegcOrpENaV')
+top2019 <- get_playlist_audio_features(playlist_username, playlist_uris)
+
+top2019 = top2019 %>%
+  select(playlist_name, track.name, track.artists, track.album.name, danceability, energy, key, loudness, speechiness, acousticness, instrumentalness, liveness, valence, tempo, track.popularity, track.album.name, track.album.release_date, track.explicit) %>%
+  mutate(track.artists = map_chr(track.artists, function(x) x$name[1]))
+
+# trovo la media dei valori
+danceabilityMean9 <- mean(top2019$danceability)
+energyMean9 <- mean(top2019$energy)
+valenceMean9 <- mean(top2019$valence)
+acousticnessMean9 <- mean(top2019$acousticness)
+instrumentalnessMean9 <- mean(top2019$instrumentalness)
+#popularityMean <- mean(top2018$track.popularity)
+
+
+medie2019 <- c('2019', danceabilityMean9, energyMean9, valenceMean9, acousticnessMean9, instrumentalnessMean9)
+
+```
+
+
+## top brani 2020
+
+```{r}
+#https://open.spotify.com/playlist/37i9dQZF1EMfTqv0LbJ0dv?si=a49d293d15bb4d6a
+playlist_username <- 'Your Top Songs 2020'
+playlist_uris <- c('37i9dQZF1EMfTqv0LbJ0dv')
+top2020 <- get_playlist_audio_features(playlist_username, playlist_uris)
+
+top2020 = top2020 %>%
+  select(playlist_name, track.name, track.artists, track.album.name, danceability, energy, key, loudness, speechiness, acousticness, instrumentalness, liveness, valence, tempo, track.popularity, track.album.name, track.album.release_date, track.explicit) %>%
+  mutate(track.artists = map_chr(track.artists, function(x) x$name[1]))
+
+# trovo la media dei valori
+danceabilityMean0 <- mean(top2020$danceability)
+energyMean0 <- mean(top2020$energy)
+valenceMean0 <- mean(top2020$valence)
+acousticnessMean0 <- mean(top2020$acousticness)
+instrumentalnessMean0 <- mean(top2020$instrumentalness)
+#popularityMean <- mean(top2018$track.popularity)
+
+
+medie2020 <- c('2020', danceabilityMean0, energyMean0, valenceMean0, acousticnessMean0, instrumentalnessMean0)
+
+```
+
+
+```{r}
+
+
+medie2 <- read.csv('medie.csv', sep = ';')
+
+colnames(medie2) <- c("Field", "anno", "value")
+
+
+
+ggplot(medie2) +
+    geom_col(aes(x = Field, y = value, fill = anno))
+```
+
+
+```{r}
+top2017_2 <- top2017 %>%
+  group_by(track.artists) %>%
+  count(track.artists)
+
+top2018_2 <- top2018 %>%
+  group_by(track.artists) %>%
+  count(track.artists)
+
+top2019_2 <- top2019 %>%
+  group_by(track.artists) %>%
+  count(track.artists)
+
+top2020_2 <- top2020 %>%
+  group_by(track.artists) %>%
+  count(track.artists)
+```
+
+
+```{r, fig.show='hide'}
+
+
+# VARIAZIONE QUANTITATIVA -> ISTOGRAMMA!
+
+# confronto danceability nelle 4 playlist
+danc <- ggplot(playlists, aes(x=danceability, fill=playlist_name))+
+  geom_density(alpha=0.7, color=NA, text = ~paste('count: ', ..count..))+
+  #geom_density(alpha=0.7, color=NA)+
+  scale_fill_manual(values=c(green, yellow, pink, blue))+
+  labs(x="Danceability", y="count")+
+  ggtitle("Danceability nelle 4 playlist")
+
+ggplotly(danc)
+
+#plot_ly(playlists, x = ~danceability, color = ~playlist_name) %>%
+#  add_histogram()
+
+```
+
+```{r, fig.show='hide'}
+ener <- ggplot(playlists, aes(x=energy, fill=playlist_name))+
+  geom_density(alpha=0.7, color=NA, text = ~paste('count: ', ..count..))+
+  scale_fill_manual(values=c(green, yellow, pink, blue))+
+  labs(x="Energy", y="count") +
+  ggtitle("Energy nelle 4 playlist")
+
+ggplotly(ener)
+```
+
+```{r, fig.show='hide'}
+
+valen <- ggplot(playlists, aes(x=valence, fill=playlist_name))+
+  geom_density(alpha=0.7, color=NA, text = ~paste('count: ', ..count..))+
+  scale_fill_manual(values=c(green, yellow, pink, blue))+
+  labs(x="Valence", y="count") +
+  ggtitle("Valence nelle 4 playlist")
+
+ggplotly(valen)
+
+```
+
+```{r, fig.show='hide'}
+
+popu <- ggplot(playlists, aes(x=track.popularity, fill=playlist_name))+
+  geom_density(alpha=0.7, color=NA, text = ~paste('count: ', ..count..))+
+  scale_fill_manual(values=c(green, yellow, pink, blue))+
+  labs(x="Popularity", y="count") +
+  ggtitle("Popularity nelle 4 playlist")
+
+ggplotly(popu)
+
+#subplot(danc, ener, valen, popu, nrows = 4)
+```
+
+
+## prendo le mie top 4 playlist e le confronto con i dati di danceability, valence e energy!
+```{r}
+# GET SPECIFIC PLAYLIST FEATURES
+#https://open.spotify.com/playlist/65GyAyaQ7iNsdfXhtAKQ1V?si=289c653088b7470b
+playlist_username <- '🇮🇹🇺🇸'
+playlist_uris <- c('65GyAyaQ7iNsdfXhtAKQ1V')
+playlistZanchi <- get_playlist_audio_features(playlist_username, playlist_uris)
+#https://open.spotify.com/playlist/0xBMPORrcYsVisrIAhIuk8?si=c7ac5fc98d264ee3
+playlist_username <- 'claclaclaaa'
+playlist_uris <- c('0xBMPORrcYsVisrIAhIuk8')
+playlistVale <- get_playlist_audio_features(playlist_username, playlist_uris)
+#https://open.spotify.com/playlist/19Ym5wkRW8Yjk7KFOUMCZV?si=6ea290371b7444b4
+playlist_username <- 'nostalgic'
+playlist_uris <- c('19Ym5wkRW8Yjk7KFOUMCZV')
+playlistNostalgic <- get_playlist_audio_features(playlist_username, playlist_uris)
+
+#tolgo cose inutili
+playlistZanchi = playlistZanchi %>%
+  select(track.name, track.artists, track.album.name, danceability, energy, key, loudness, speechiness, acousticness, instrumentalness, liveness, valence, tempo, track.popularity, track.album.name, track.album.release_date, track.explicit) %>%
+  mutate(track.artists = map_chr(track.artists, function(x) x$name[1]))
+playlistZanchi$playlist_name <- 'ITUS'
+
+playlistVale = playlistVale %>%
+  select(track.name, track.artists, track.album.name, danceability, energy, key, loudness, speechiness, acousticness, instrumentalness, liveness, valence, tempo, track.popularity, track.album.name, track.album.release_date, track.explicit) %>%
+  mutate(track.artists = map_chr(track.artists, function(x) x$name[1]))
+playlistVale$playlist_name <- 'claclaclaaa'
+
+playlistNostalgic = playlistNostalgic %>%
+  select(track.name, track.artists, track.album.name, danceability, energy, key, loudness, speechiness, acousticness, instrumentalness, liveness, valence, tempo, track.popularity, track.album.name, track.album.release_date, track.explicit) %>%
+  mutate(track.artists = map_chr(track.artists, function(x) x$name[1]))
+playlistNostalgic$playlist_name <- 'nostalgic'
+
+#unisco i 4 df in uno solo
+playlists <- rbind(playlistJuly, playlistZanchi, playlistVale, playlistNostalgic)
+
+
+```
+
+

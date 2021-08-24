@@ -1,0 +1,12 @@
+"0","library(kableExtra)
+"
+"2","package ‘kableExtra’ was built under R version 4.0.5"
+"2","
+Attaching package: ‘kableExtra’
+
+"
+"2","The following object is masked from ‘package:dplyr’:
+
+    group_rows
+
+"

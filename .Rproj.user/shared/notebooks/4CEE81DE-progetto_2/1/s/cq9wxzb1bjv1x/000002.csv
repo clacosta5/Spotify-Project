@@ -1,0 +1,4 @@
+"0","# GET SPECIFIC PLAYLIST FEATURES"
+"0","playlist_username <- 'VII/MMXXI july'"
+"0","playlist_uris <- c('5jWdr5QCwbEi7mxO7cTAGh')"
+"0","playlistJuly <- get_playlist_audio_features(playlist_username, playlist_uris)"
